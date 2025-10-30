@@ -217,7 +217,7 @@ class YUE_Stage_A_Sampler:
                 "repetition_penalty": ("FLOAT", {"default": 1.1, "min": 1.0, "max": 2.0, "step": 0.1, "tooltip": "重复惩罚系数，值越大越能避免重复内容，建议范围1.0-1.5"}),
                 "prompt_start_time": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 300.0, "step": 0.5, "tooltip": "音频提示的开始时间（仅在使用音频提示时有效）"}),
                 "prompt_end_time": ("FLOAT", {"default": 6.0, "min": 1.0, "max": 300.0, "step": 0.5, "tooltip": "音频提示的结束时间（仅在使用音频提示时有效）"}),
-                "max_new_tokens": ("INT", {"default": 16384, "min": 2944, "max": 32768, "step": 1, "display": "number", "tooltip": "最大生成token数量，影响生成质量和速度，值越大质量越好但速度越慢"}),
+                "max_new_tokens": ("INT", {"default": 16384, "min": 2944, "max": 65536, "step": 1, "display": "number", "tooltip": "最大生成token数量，影响生成质量和速度，值越大质量越好但速度越慢"}),
                 "use_dual_tracks_prompt":("BOOLEAN",{"default":True, "tooltip": "是否使用双轨音频提示（人声+伴奏分离）"}),
                 "use_audio_prompt":("BOOLEAN",{"default":False, "tooltip": "是否使用单轨音频提示作为参考"}),
                 "offload_model":("BOOLEAN",{"default":True, "tooltip": "是否在生成完成后卸载模型以释放显存"}),
