@@ -326,9 +326,28 @@ class YUE_Stage_A_Sampler:
                 print(f"Auto-calculated segments for {target_duration}s target: {run_n_segments} segments")
                 print(f"Estimated output duration: {run_n_segments * estimated_seconds_per_segment:.1f}s")
             
+            # Additional safety checks
+            if len(lyrics) == 0:
+                raise ValueError("No lyrics provided. Cannot generate music without lyrics.")
+            
+            if run_n_segments <= 1:
+                print(f"Warning: run_n_segments is {run_n_segments}, which is too small for proper generation.")
+                if len(lyrics) >= 2:
+                    run_n_segments = 2
+                    print(f"Setting to minimum of 2 segments.")
+                else:
+                    run_n_segments = len(lyrics)
+                    print(f"Using all available lyrics segments: {run_n_segments}")
+            
+            print(f"Final run_n_segments: {run_n_segments}, available lyrics: {len(lyrics)}")
+            
             # Format text prompt
             #run_n_segments = min(run_n_segment+1, len(lyrics_prompt))
             #run_n_segments = min(run_n_segment, len(lyrics_prompt))
+            
+            # Initialize raw_output to avoid UnboundLocalError
+            raw_output = None
+            
             for i, p in enumerate(tqdm(prompt_texts[:run_n_segments], desc="Stage1 inference...")):
                 section_text = p.replace('[start_of_segment]', '').replace('[end_of_segment]', '')
                 guidance_scale = 1.5 if i <=1 else 1.2
@@ -389,6 +408,10 @@ class YUE_Stage_A_Sampler:
                     raw_output = torch.cat([raw_output, prompt_ids, output_seq[:, input_ids.shape[-1]:]], dim=1)
                 else:
                     raw_output = output_seq
+
+            # Check if raw_output was properly initialized
+            if raw_output is None:
+                raise ValueError(f"Generation failed: raw_output was not initialized. This may be due to insufficient segments (run_n_segments={run_n_segments}) or empty lyrics.")
 
             # save raw output and check sanity
             ids = raw_output[0].cpu().numpy()
