@@ -214,7 +214,6 @@ class YUE_Stage_A_Sampler:
                     "[bridge]\nNo, I won't back down, won't turn around.\nUntil you're back where you belong.\nI'll cross the oceans wide, stand by your side.\nTogether we are strong. \n\n"
                     "[outro]\nEvery road you take, I'll be one step behind.\nEvery dream you chase, love's the tie that binds.\nYou can't fight this feeling now.\nI won't back down.", "multiline": True}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": MAX_SEED}),
-                "target_duration": ("FLOAT", {"default": 90.0, "min": 30.0, "max": 300.0, "step": 5.0, "display": "number", "tooltip": "目标生成音乐的总时长（秒）"}),
                 "repetition_penalty": ("FLOAT", {"default": 1.1, "min": 1.0, "max": 2.0, "step": 0.1}),
                 "prompt_start_time": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 300.0, "step": 0.5, "tooltip": "音频提示的开始时间（仅在使用音频提示时有效）"}),
                 "prompt_end_time": ("FLOAT", {"default": 6.0, "min": 1.0, "max": 300.0, "step": 0.5, "tooltip": "音频提示的结束时间（仅在使用音频提示时有效）"}),
@@ -225,7 +224,7 @@ class YUE_Stage_A_Sampler:
                 "stage1_no_guidance":("BOOLEAN",{"default":True}),
             },
             "optional": {
-                "manual_segments": ("INT", {"default": 0, "min": 0, "max": 10, "step": 1, "display": "number", "tooltip": "手动设置段落数量，0表示自动计算"}),
+                "manual_segments": ("INT", {"default": 0, "min": 0, "max": 10, "step": 1, "display": "number", "tooltip": "限制使用的歌词段落数量，0表示使用所有歌词段落"}),
             }
         }
 
@@ -234,7 +233,7 @@ class YUE_Stage_A_Sampler:
     FUNCTION = "sampler_main"
     CATEGORY = "YUE"
 
-    def sampler_main(self, model, genres_prompt, lyrics_prompt, seed, target_duration, repetition_penalty, prompt_start_time, prompt_end_time, max_new_tokens,
+    def sampler_main(self, model, genres_prompt, lyrics_prompt, seed, repetition_penalty, prompt_start_time, prompt_end_time, max_new_tokens,
                      use_dual_tracks_prompt, use_audio_prompt, offload_model, stage1_no_guidance, manual_segments=0):
         
         instrumental_track_prompt_path=os.path.join(current_node_path, "prompt_egs/pop.00001.Instrumental.mp3")
@@ -312,19 +311,15 @@ class YUE_Stage_A_Sampler:
             start_of_segment = mmtokenizer.tokenize('[start_of_segment]')
             end_of_segment = mmtokenizer.tokenize('[end_of_segment]')
             
-            # Calculate run_n_segments based on target_duration or manual_segments
+            # Calculate run_n_segments based on lyrics or manual_segments
             if manual_segments > 0:
-                # Use manual setting
+                # Use manual setting as a limit
                 run_n_segments = min(manual_segments, len(lyrics))
-                print(f"Using manual segments: {run_n_segments}")
+                print(f"Using manual segments limit: {run_n_segments} (max: {manual_segments}, available lyrics: {len(lyrics)})")
             else:
-                # Auto-calculate based on target_duration
-                # Estimate: each segment generates approximately 15-20 seconds of music
-                estimated_seconds_per_segment = 18.0  # Average estimate
-                calculated_segments = max(1, int(target_duration / estimated_seconds_per_segment))
-                run_n_segments = min(calculated_segments, len(lyrics))
-                print(f"Auto-calculated segments for {target_duration}s target: {run_n_segments} segments")
-                print(f"Estimated output duration: {run_n_segments * estimated_seconds_per_segment:.1f}s")
+                # Use all available lyrics segments
+                run_n_segments = len(lyrics)
+                print(f"Using all lyrics segments: {run_n_segments}")
             
             # Additional safety checks
             if len(lyrics) == 0:
@@ -340,6 +335,7 @@ class YUE_Stage_A_Sampler:
                     print(f"Using all available lyrics segments: {run_n_segments}")
             
             print(f"Final run_n_segments: {run_n_segments}, available lyrics: {len(lyrics)}")
+            print(f"Estimated output duration: {run_n_segments * 18.0:.1f}s (approximately {run_n_segments * 18.0 / 60:.1f} minutes)")
             
             # Format text prompt
             #run_n_segments = min(run_n_segment+1, len(lyrics_prompt))
