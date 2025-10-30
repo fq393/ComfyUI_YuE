@@ -45,7 +45,7 @@ class YUE_Stage_A_Loader:
         ckpt_list_xcodec = [i for i in folder_paths.get_filename_list("yue") if "36" in i]
         return {
             "required": {
-                "stage_A_repo": ("STRING",{"default": "m-a-p/YuE-s1-7B-anneal-en-cot"},),
+                "stage_A_repo": ("STRING",{"default": "YuE-s1-7B-anneal-en-cot"},),
                 "xcodec_ckpt": (["none"] + ckpt_list_xcodec,),
                 "quantization_model":(["fp16","int8","int4","exllamav2"],),
                 "use_mmgp":("BOOLEAN",{"default":True}),
@@ -61,6 +61,9 @@ class YUE_Stage_A_Loader:
     CATEGORY = "YUE"
 
     def loader_main(self, stage_A_repo, xcodec_ckpt,quantization_model,use_mmgp,stage1_cache_size,exllamav2_cache_mode,mmgp_profile):
+        # Convert stage_A_repo to full local path
+        stage_A_repo = folder_paths.get_full_path("yue", stage_A_repo)
+        
         basic_model_config=os.path.join(current_node_path, "inference/xcodec_mini_infer/final_ckpt/config.yaml")
         model_config = OmegaConf.load(basic_model_config)
         resume_path=folder_paths.get_full_path("yue", xcodec_ckpt)
@@ -397,7 +400,7 @@ class YUE_Stage_B_Loader:
         return {
             "required": {
                 "info": ("quantization_model",),
-                "stage_B_repo": ("STRING",{"default": "m-a-p/YuE-s2-1B-general"},),
+                "stage_B_repo": ("STRING",{"default": "YuE-s2-1B-general"},),
                 "stage2_cache_size": ("INT",{"default": 8192, "min": 4096, "max": MAX_SEED, "step": 64, "display": "number"}),
                 "stage2_batch_size": ("INT",{"default": 2, "min": 1, "max": 64, "step": 1, "display": "number"}),
                 "exllamav2_cache_mode": (["FP16","Q8","Q6", "Q4"],),
@@ -411,6 +414,8 @@ class YUE_Stage_B_Loader:
     CATEGORY = "YUE"
 
     def loader_main(self,info,stage_B_repo,stage2_cache_size,stage2_batch_size,exllamav2_cache_mode,use_mmgp):
+        # Convert stage_B_repo to full local path
+        stage_B_repo = folder_paths.get_full_path("yue", stage_B_repo)
 
         quantization_model=info.get("quantization_model")
         mmgp_profile=info.get("mmgp_profile")
