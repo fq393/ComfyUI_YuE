@@ -45,13 +45,13 @@ class YUE_Stage_A_Loader:
         ckpt_list_xcodec = [i for i in folder_paths.get_filename_list("yue") if "36" in i]
         return {
             "required": {
-                "stage_A_repo": ("STRING",{"default": "YuE-s1-7B-anneal-en-cot"},),
-                "xcodec_ckpt": (["none"] + ckpt_list_xcodec,),
-                "quantization_model":(["fp16","int8","int4","exllamav2"],),
-                "use_mmgp":("BOOLEAN",{"default":True}),
-                "stage1_cache_size": ("INT",{"default": 65536, "min": 8192, "max": MAX_SEED, "step": 64, "display": "number"}),
-                "exllamav2_cache_mode": (["FP16","Q8","Q6", "Q4"],),
-                "mmgp_profile": ([0,1,2,3,4,5],),
+                "stage_A_repo": ("STRING",{"default": "YuE-s1-7B-anneal-en-cot", "tooltip": "Stage A模型仓库名称，用于音乐生成的第一阶段"}),
+                "xcodec_ckpt": (["none"] + ckpt_list_xcodec, {"tooltip": "XCodec检查点文件，用于音频编解码"}),
+                "quantization_model":(["fp16","int8","int4","exllamav2"], {"tooltip": "模型量化方式：fp16(半精度)、int8(8位整数)、int4(4位整数)、exllamav2(高效量化)"}),
+                "use_mmgp":("BOOLEAN",{"default":True, "tooltip": "是否使用MMGP(多模态生成预处理)，建议开启以获得更好的生成质量"}),
+                "stage1_cache_size": ("INT",{"default": 65536, "min": 8192, "max": MAX_SEED, "step": 64, "display": "number", "tooltip": "Stage1缓存大小，影响推理速度和内存占用。更大的值可提升性能但占用更多内存"}),
+                "exllamav2_cache_mode": (["FP16","Q8","Q6", "Q4"], {"tooltip": "ExLlamaV2缓存模式：FP16(最高质量)、Q8(8位量化)、Q6(6位量化)、Q4(4位量化，最省内存)"}),
+                "mmgp_profile": ([0,1,2,3,4,5], {"tooltip": "MMGP配置文件编号(0-5)，不同配置对应不同的生成策略和质量"}),
             },
         }
 
@@ -482,12 +482,12 @@ class YUE_Stage_B_Loader:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "info": ("quantization_model",),
-                "stage_B_repo": ("STRING",{"default": "YuE-s2-1B-general"},),
-                "stage2_cache_size": ("INT",{"default": 262144, "min": 4096, "max": MAX_SEED, "step": 64, "display": "number"}),
-                "stage2_batch_size": ("INT",{"default": 2, "min": 1, "max": 64, "step": 1, "display": "number"}),
-                "exllamav2_cache_mode": (["FP16","Q8","Q6", "Q4"],),
-                "use_mmgp":("BOOLEAN",{"default":True}),
+                "info": ("quantization_model", {"tooltip": "从Stage A传递的量化模型信息"}),
+                "stage_B_repo": ("STRING",{"default": "YuE-s2-1B-general", "tooltip": "Stage B模型仓库名称，用于音乐生成的第二阶段(音频合成)"}),
+                "stage2_cache_size": ("INT",{"default": 262144, "min": 4096, "max": MAX_SEED, "step": 64, "display": "number", "tooltip": "Stage2缓存大小，控制音频合成阶段的缓存。更大的值可显著提升合成速度"}),
+                "stage2_batch_size": ("INT",{"default": 2, "min": 1, "max": 64, "step": 1, "display": "number", "tooltip": "Stage2批处理大小，影响音频合成的并行度。增大可提升速度但占用更多显存"}),
+                "exllamav2_cache_mode": (["FP16","Q8","Q6", "Q4"], {"tooltip": "ExLlamaV2缓存模式：FP16(最高质量)、Q8(8位量化)、Q6(6位量化)、Q4(4位量化，最省内存)"}),
+                "use_mmgp":("BOOLEAN",{"default":True, "tooltip": "是否使用MMGP(多模态生成预处理)，建议开启以获得更好的音频合成质量"}),
             },
         }
 
