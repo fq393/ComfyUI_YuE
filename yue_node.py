@@ -375,6 +375,8 @@ class YUE_Stage_A_Sampler:
                 guidance_scale = 1.5 if i <=1 else 1.2
                 if i==0:
                     continue
+                
+                # Prepare prompt_ids based on iteration
                 if i==1:
                     if use_dual_tracks_prompt or use_audio_prompt:
                         if use_dual_tracks_prompt:
@@ -402,13 +404,42 @@ class YUE_Stage_A_Sampler:
                 else:
                     prompt_ids = end_of_segment + start_of_segment + mmtokenizer.tokenize(section_text) + [mmtokenizer.soa] + codectool.sep_ids
 
-                prompt_ids = torch.as_tensor(prompt_ids).unsqueeze(0).to(device) 
-                input_ids = torch.cat([raw_output, prompt_ids], dim=1) if i > 1 else prompt_ids
+                # Validate prompt_ids is not empty
+                if not prompt_ids:
+                    print(f"Warning: prompt_ids is empty for section {i}, skipping...")
+                    continue
+                
+                prompt_ids = torch.as_tensor(prompt_ids).unsqueeze(0).to(device)
+                
+                # Validate prompt_ids tensor
+                if prompt_ids.numel() == 0:
+                    print(f"Warning: prompt_ids tensor is empty for section {i}, skipping...")
+                    continue
+                
+                # Prepare input_ids
+                if i > 1 and raw_output is not None:
+                    input_ids = torch.cat([raw_output, prompt_ids], dim=1)
+                else:
+                    input_ids = prompt_ids
+                
+                # Validate input_ids
+                if input_ids.numel() == 0:
+                    print(f"Warning: input_ids tensor is empty for section {i}, skipping...")
+                    continue
+                
                 # Use window slicing in case output sequence exceeds the context of model
                 max_context = 16384-max_new_tokens-1
                 if input_ids.shape[-1] > max_context:
                     print(f'Section {i}: output length {input_ids.shape[-1]} exceeding context length {max_context}, now using the last {max_context} tokens.')
                     input_ids = input_ids[:, -(max_context):]
+                
+                # Final validation before generation
+                if input_ids.shape[-1] == 0:
+                    print(f"Error: input_ids has zero length for section {i}, skipping generation...")
+                    continue
+                
+                print(f"Section {i}: input_ids shape: {input_ids.shape}, generating with max_new_tokens: {max_new_tokens}")
+                
                 with torch.no_grad():
                     output_seq = stage_1_model.generate(
                         input_ids=input_ids, 
@@ -426,10 +457,12 @@ class YUE_Stage_A_Sampler:
                     if output_seq[0][-1].item() != mmtokenizer.eoa:
                         tensor_eoa = torch.as_tensor([[mmtokenizer.eoa]]).to(stage_1_model.device)
                         output_seq = torch.cat((output_seq, tensor_eoa), dim=1)
-                if i > 1:
-                    raw_output = torch.cat([raw_output, prompt_ids, output_seq[:, input_ids.shape[-1]:]], dim=1)
-                else:
+                
+                # Update raw_output
+                if i == 1:
                     raw_output = output_seq
+                else:
+                    raw_output = torch.cat([raw_output, prompt_ids, output_seq[:, input_ids.shape[-1]:]], dim=1)
 
             # Check if raw_output was properly initialized
             if raw_output is None:
