@@ -214,7 +214,7 @@ class YUE_Stage_A_Sampler:
                     "[bridge]\nNo, I won't back down, won't turn around.\nUntil you're back where you belong.\nI'll cross the oceans wide, stand by your side.\nTogether we are strong. \n\n"
                     "[outro]\nEvery road you take, I'll be one step behind.\nEvery dream you chase, love's the tie that binds.\nYou can't fight this feeling now.\nI won't back down.", "multiline": True}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": MAX_SEED}),
-                "target_duration": ("FLOAT", {"default": 30.0, "min": 10.0, "max": 300.0, "step": 5.0, "display": "number"}),
+                "target_duration": ("FLOAT", {"default": 90.0, "min": 30.0, "max": 300.0, "step": 5.0, "display": "number"}),
                 "repetition_penalty": ("FLOAT", {"default": 1.1, "min": 1.0, "max": 2.0, "step": 0.1}),
                 "prompt_start_time": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 30.0, "step": 0.5}),
                 "prompt_end_time": ("FLOAT", {"default": 6.0, "min": 1.0, "max": 30.0, "step": 0.5}),
