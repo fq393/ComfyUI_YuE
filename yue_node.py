@@ -49,7 +49,7 @@ class YUE_Stage_A_Loader:
                 "xcodec_ckpt": (["none"] + ckpt_list_xcodec,),
                 "quantization_model":(["fp16","int8","int4","exllamav2"],),
                 "use_mmgp":("BOOLEAN",{"default":True}),
-                "stage1_cache_size": ("INT",{"default": 16384, "min": 8192, "max": MAX_SEED, "step": 64, "display": "number"}),
+                "stage1_cache_size": ("INT",{"default": 65536, "min": 8192, "max": MAX_SEED, "step": 64, "display": "number"}),
                 "exllamav2_cache_mode": (["FP16","Q8","Q6", "Q4"],),
                 "mmgp_profile": ([0,1,2,3,4,5],),
             },
@@ -484,7 +484,7 @@ class YUE_Stage_B_Loader:
             "required": {
                 "info": ("quantization_model",),
                 "stage_B_repo": ("STRING",{"default": "YuE-s2-1B-general"},),
-                "stage2_cache_size": ("INT",{"default": 8192, "min": 4096, "max": MAX_SEED, "step": 64, "display": "number"}),
+                "stage2_cache_size": ("INT",{"default": 262144, "min": 4096, "max": MAX_SEED, "step": 64, "display": "number"}),
                 "stage2_batch_size": ("INT",{"default": 2, "min": 1, "max": 64, "step": 1, "display": "number"}),
                 "exllamav2_cache_mode": (["FP16","Q8","Q6", "Q4"],),
                 "use_mmgp":("BOOLEAN",{"default":True}),
