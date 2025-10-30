@@ -369,6 +369,7 @@ class YUE_Stage_A_Sampler:
             
             # Initialize raw_output to avoid UnboundLocalError
             raw_output = None
+            first_valid_iteration = True
             
             for i, p in enumerate(tqdm(prompt_texts[:run_n_segments], desc="Stage1 inference...")):
                 section_text = p.replace('[start_of_segment]', '').replace('[end_of_segment]', '')
@@ -417,7 +418,7 @@ class YUE_Stage_A_Sampler:
                     continue
                 
                 # Prepare input_ids
-                if i > 1 and raw_output is not None:
+                if not first_valid_iteration and raw_output is not None:
                     input_ids = torch.cat([raw_output, prompt_ids], dim=1)
                 else:
                     input_ids = prompt_ids
@@ -458,15 +459,26 @@ class YUE_Stage_A_Sampler:
                         tensor_eoa = torch.as_tensor([[mmtokenizer.eoa]]).to(stage_1_model.device)
                         output_seq = torch.cat((output_seq, tensor_eoa), dim=1)
                 
-                # Update raw_output
-                if i == 1:
+                # Update raw_output - use first_valid_iteration flag instead of hardcoded i==1
+                if first_valid_iteration:
                     raw_output = output_seq
+                    first_valid_iteration = False
+                    print(f"Initialized raw_output at section {i} with shape: {raw_output.shape}")
                 else:
                     raw_output = torch.cat([raw_output, prompt_ids, output_seq[:, input_ids.shape[-1]:]], dim=1)
+                    print(f"Updated raw_output at section {i}, new shape: {raw_output.shape}")
 
             # Check if raw_output was properly initialized
             if raw_output is None:
-                raise ValueError(f"Generation failed: raw_output was not initialized. This may be due to insufficient segments (run_n_segments={run_n_segments}) or empty lyrics.")
+                error_msg = f"Generation failed: raw_output was not initialized.\n"
+                error_msg += f"Debug info:\n"
+                error_msg += f"- run_n_segments: {run_n_segments}\n"
+                error_msg += f"- available lyrics segments: {len(lyrics)}\n"
+                error_msg += f"- prompt_texts length: {len(prompt_texts)}\n"
+                error_msg += f"- first_valid_iteration: {first_valid_iteration}\n"
+                error_msg += f"This usually means all iterations were skipped due to empty prompt_ids or input validation failures.\n"
+                error_msg += f"Please check your lyrics content and ensure it's not empty."
+                raise ValueError(error_msg)
 
             # save raw output and check sanity
             ids = raw_output[0].cpu().numpy()
