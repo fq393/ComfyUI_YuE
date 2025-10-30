@@ -217,7 +217,7 @@ class YUE_Stage_A_Sampler:
                 "repetition_penalty": ("FLOAT", {"default": 1.1, "min": 1.0, "max": 2.0, "step": 0.1, "tooltip": "重复惩罚系数，值越大越能避免重复内容，建议范围1.0-1.5"}),
                 "prompt_start_time": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 300.0, "step": 0.5, "tooltip": "音频提示的开始时间（仅在使用音频提示时有效）"}),
                 "prompt_end_time": ("FLOAT", {"default": 6.0, "min": 1.0, "max": 300.0, "step": 0.5, "tooltip": "音频提示的结束时间（仅在使用音频提示时有效）"}),
-                "max_new_tokens": ("INT", {"default": 16384, "min": 2944, "max": 65536, "step": 1, "display": "number", "tooltip": "最大生成token数量，影响生成质量和速度，值越大质量越好但速度越慢"}),
+                "max_new_tokens": ("INT", {"default": 8192, "min": 2944, "max": 15000, "step": 1, "display": "number", "tooltip": "最大生成token数量，影响生成质量和速度。注意：过大的值可能导致内存不足或生成失败"}),
                 "use_dual_tracks_prompt":("BOOLEAN",{"default":True, "tooltip": "是否使用双轨音频提示（人声+伴奏分离）"}),
                 "use_audio_prompt":("BOOLEAN",{"default":False, "tooltip": "是否使用单轨音频提示作为参考"}),
                 "offload_model":("BOOLEAN",{"default":True, "tooltip": "是否在生成完成后卸载模型以释放显存"}),
@@ -319,11 +319,6 @@ class YUE_Stage_A_Sampler:
             
             lyrics=split_lyrics(lyrics_prompt.strip()) 
             
-            # Debug: Print split lyrics results
-            print(f"DEBUG: Split lyrics count: {len(lyrics)}")
-            for i, lyric in enumerate(lyrics):
-                print(f"DEBUG: Lyrics segment {i}: {lyric[:100]}...")
-            
             # Check if lyrics is empty
             if not lyrics or len(lyrics) == 0:
                 raise ValueError(f"No lyrics segments found after splitting. Original input: {lyrics_prompt.strip()[:200]}...")
@@ -341,10 +336,6 @@ class YUE_Stage_A_Sampler:
             full_lyrics = "\n".join(lyrics)
             prompt_texts = [f"Generate music from the given lyrics segment by segment.\n[Genre] {genres_prompt}\n{full_lyrics}"]
             prompt_texts += lyrics
-            
-            # Debug: Print prompt_texts information
-            print(f"DEBUG: Total prompt_texts count: {len(prompt_texts)}")
-            print(f"DEBUG: First prompt_text: {prompt_texts[0][:200]}...")
 
             random_id = uuid.uuid4()
             output_seq = None
@@ -379,9 +370,6 @@ class YUE_Stage_A_Sampler:
                     run_n_segments = len(lyrics)
                     print(f"Using all available lyrics segments: {run_n_segments}")
             
-            print(f"Final run_n_segments: {run_n_segments}, available lyrics: {len(lyrics)}")
-            print(f"Estimated output duration: {run_n_segments * 18.0:.1f}s (approximately {run_n_segments * 18.0 / 60:.1f} minutes)")
-            
             # Format text prompt
             #run_n_segments = min(run_n_segment+1, len(lyrics_prompt))
             #run_n_segments = min(run_n_segment, len(lyrics_prompt))
@@ -390,21 +378,11 @@ class YUE_Stage_A_Sampler:
             raw_output = None
             first_valid_iteration = True
             
-            print(f"DEBUG: Starting segment processing loop with run_n_segments={run_n_segments}")
-            print(f"DEBUG: prompt_texts length: {len(prompt_texts)}")
-            print(f"DEBUG: Will process segments: {list(range(min(run_n_segments, len(prompt_texts))))}")
-            
             for i, p in enumerate(tqdm(prompt_texts[:run_n_segments], desc="Stage1 inference...")):
-                print(f"DEBUG: Processing segment {i}/{run_n_segments-1}")
-                print(f"DEBUG: Segment text preview: {p[:150]}...")
-                
                 section_text = p.replace('[start_of_segment]', '').replace('[end_of_segment]', '')
                 guidance_scale = 1.5 if i <=1 else 1.2
                 
-                print(f"DEBUG: guidance_scale={guidance_scale}, first_valid_iteration={first_valid_iteration}")
-                
                 if i==0:
-                    print(f"DEBUG: Skipping segment {i} (i==0)")
                     continue
                 
                 # Prepare prompt_ids based on iteration
@@ -433,43 +411,22 @@ class YUE_Stage_A_Sampler:
                         sentence_ids = mmtokenizer.tokenize("[start_of_reference]") +  audio_prompt_codec_ids + mmtokenizer.tokenize("[end_of_reference]")
                         head_id = mmtokenizer.tokenize(prompt_texts[0]) + sentence_ids
                     else:
-                        print(f"DEBUG: Using text-only prompt")
                         head_id = mmtokenizer.tokenize(prompt_texts[0])
                     
-                    print(f"DEBUG: head_id length: {len(head_id)}")
-                    print(f"DEBUG: start_of_segment length: {len(start_of_segment)}")
-                    print(f"DEBUG: section_text length: {len(section_text)}")
                     tokenized_section = mmtokenizer.tokenize(section_text)
-                    print(f"DEBUG: tokenized_section length: {len(tokenized_section)}")
-                    print(f"DEBUG: codectool.sep_ids length: {len(codectool.sep_ids)}")
-                    
                     prompt_ids = head_id + start_of_segment + tokenized_section + [mmtokenizer.soa] + codectool.sep_ids
                 else:
-                    print(f"DEBUG: Processing continuation segment (i={i})")
-                    print(f"DEBUG: end_of_segment length: {len(end_of_segment)}")
-                    print(f"DEBUG: start_of_segment length: {len(start_of_segment)}")
                     tokenized_section = mmtokenizer.tokenize(section_text)
-                    print(f"DEBUG: tokenized_section length: {len(tokenized_section)}")
-                    
                     prompt_ids = end_of_segment + start_of_segment + tokenized_section + [mmtokenizer.soa] + codectool.sep_ids
-                
-                print(f"DEBUG: Final prompt_ids length: {len(prompt_ids)}")
 
                 # Validate prompt_ids is not empty
                 if not prompt_ids:
-                    print(f"ERROR: prompt_ids is empty for section {i}")
-                    print(f"DEBUG: section_text was: '{section_text[:100]}...'")
-                    print(f"DEBUG: Skipping section {i}")
                     continue
                 
-                print(f"DEBUG: Converting prompt_ids to tensor, length: {len(prompt_ids)}")
                 prompt_ids = torch.as_tensor(prompt_ids).unsqueeze(0).to(device)
-                print(f"DEBUG: prompt_ids tensor shape: {prompt_ids.shape}")
                 
                 # Validate prompt_ids tensor
                 if prompt_ids.numel() == 0:
-                    print(f"ERROR: prompt_ids tensor is empty for section {i}")
-                    print(f"DEBUG: Skipping section {i}")
                     continue
                 
                 # Prepare input_ids
@@ -490,27 +447,27 @@ class YUE_Stage_A_Sampler:
                     continue
                 
                 # Use window slicing in case output sequence exceeds the context of model
-                max_context = 16384-max_new_tokens-1
-                print(f"DEBUG: max_context calculated as: {max_context}")
+                # Ensure max_new_tokens doesn't exceed model context limit
+                model_context_limit = 16384
+                effective_max_new_tokens = min(max_new_tokens, model_context_limit - 1000)  # Reserve 1000 tokens for input
+                max_context = model_context_limit - effective_max_new_tokens - 1
+                
+                if effective_max_new_tokens != max_new_tokens:
+                    print(f"WARNING: max_new_tokens ({max_new_tokens}) too large, using {effective_max_new_tokens} instead")
+                
                 if input_ids.shape[-1] > max_context:
                     print(f'Section {i}: output length {input_ids.shape[-1]} exceeding context length {max_context}, now using the last {max_context} tokens.')
                     input_ids = input_ids[:, -(max_context):]
-                    print(f"DEBUG: After slicing, input_ids shape: {input_ids.shape}")
                 
                 # Final validation before generation
                 if input_ids.shape[-1] == 0:
-                    print(f"ERROR: input_ids has zero length for section {i}, skipping generation...")
                     continue
-                
-                print(f"Section {i}: Starting generation with input_ids shape: {input_ids.shape}, max_new_tokens: {max_new_tokens}")
-                print(f"DEBUG: Generation parameters - top_p: {top_p}, temperature: {temperature}, repetition_penalty: {repetition_penalty}")
-                print(f"DEBUG: guidance_scale: {guidance_scale}")
                 
                 try:
                     with torch.no_grad():
                         output_seq = stage_1_model.generate(
                             input_ids=input_ids, 
-                            max_new_tokens=max_new_tokens, 
+                            max_new_tokens=effective_max_new_tokens, 
                             min_new_tokens=100, 
                             do_sample=True, 
                             top_p=top_p,
@@ -521,19 +478,13 @@ class YUE_Stage_A_Sampler:
                             logits_processor=LogitsProcessorList([BlockTokenRangeProcessor(0, 32002), BlockTokenRangeProcessor(32016, 32016)]),
                             guidance_scale=guidance_scale,
                             )
-                        print(f"DEBUG: Generation completed for section {i}, output_seq shape: {output_seq.shape}")
                         
                         if output_seq[0][-1].item() != mmtokenizer.eoa:
-                            print(f"DEBUG: Adding EOA token to output_seq")
                             tensor_eoa = torch.as_tensor([[mmtokenizer.eoa]]).to(stage_1_model.device)
                             output_seq = torch.cat((output_seq, tensor_eoa), dim=1)
-                            print(f"DEBUG: After adding EOA, output_seq shape: {output_seq.shape}")
-                        else:
-                            print(f"DEBUG: Output already ends with EOA token")
                             
                 except Exception as e:
                     print(f"ERROR: Generation failed for section {i}: {str(e)}")
-                    print(f"DEBUG: Skipping section {i} due to generation error")
                     continue
                 
                 # Update raw_output - use first_valid_iteration flag instead of hardcoded i==1
@@ -547,47 +498,7 @@ class YUE_Stage_A_Sampler:
 
             # Check if raw_output was properly initialized
             if raw_output is None:
-                error_msg = f"Generation failed: raw_output was not initialized.\n\n"
-                error_msg += f"=== DETAILED DEBUG INFORMATION ===\n"
-                error_msg += f"Input Parameters:\n"
-                error_msg += f"- run_n_segments: {run_n_segments}\n"
-                error_msg += f"- manual_segments: {manual_segments}\n"
-                error_msg += f"- available lyrics segments: {len(lyrics)}\n"
-                error_msg += f"- prompt_texts length: {len(prompt_texts)}\n"
-                error_msg += f"- first_valid_iteration: {first_valid_iteration}\n"
-                error_msg += f"- guidance_scale: {guidance_scale}\n"
-                error_msg += f"- max_new_tokens: {max_new_tokens}\n\n"
-                
-                error_msg += f"Lyrics Content Analysis:\n"
-                error_msg += f"- Original lyrics length: {len(lyrics_prompt.strip())}\n"
-                error_msg += f"- Lyrics preview: '{lyrics_prompt.strip()[:200]}...'\n"
-                error_msg += f"- Split lyrics count: {len(lyrics)}\n"
-                if lyrics:
-                    error_msg += f"- First lyrics segment: '{lyrics[0][:100]}...'\n"
-                    error_msg += f"- Last lyrics segment: '{lyrics[-1][:100]}...'\n"
-                else:
-                    error_msg += f"- ERROR: No lyrics segments found after splitting!\n"
-                
-                error_msg += f"\nPrompt Processing Analysis:\n"
-                if prompt_texts:
-                    error_msg += f"- First prompt_text: '{prompt_texts[0][:100]}...'\n"
-                    error_msg += f"- Last prompt_text: '{prompt_texts[-1][:100]}...'\n"
-                else:
-                    error_msg += f"- ERROR: No prompt_texts generated!\n"
-                
-                error_msg += f"\n=== POSSIBLE CAUSES ===\n"
-                error_msg += f"1. All iterations were skipped due to empty prompt_ids\n"
-                error_msg += f"2. Input validation failures (empty tensors, context length issues)\n"
-                error_msg += f"3. Generation errors in all segments\n"
-                error_msg += f"4. Lyrics format issues (incorrect tags or empty content)\n"
-                error_msg += f"5. Tokenization problems\n\n"
-                error_msg += f"=== RECOMMENDATIONS ===\n"
-                error_msg += f"1. Check that your lyrics contain proper tags like [verse], [chorus], etc.\n"
-                error_msg += f"2. Ensure lyrics content is not empty after tags\n"
-                error_msg += f"3. Try reducing the number of segments or using manual_segments\n"
-                error_msg += f"4. Check the console output above for specific error messages\n"
-                
-                raise ValueError(error_msg)
+                raise ValueError("Generation failed: raw_output was not initialized. Please check your lyrics format and try again.")
 
             # save raw output and check sanity
             ids = raw_output[0].cpu().numpy()
