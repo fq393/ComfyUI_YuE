@@ -67,20 +67,22 @@ class YUE_Stage_A_Loader:
         
         # Convert stage_A_repo to full local path
         original_stage_A_repo = stage_A_repo
-        stage_A_repo = folder_paths.get_full_path("yue", stage_A_repo)
+        local_model_path = os.path.join(YUE_weigths_path, stage_A_repo)
         
-        # Debug: Print path conversion results
-        print(f"[DEBUG] folder_paths.get_full_path('yue', '{original_stage_A_repo}') returned: {stage_A_repo}")
+        # Debug: Print path construction
+        print(f"[DEBUG] Constructed local path: {local_model_path}")
+        print(f"[DEBUG] Local path exists: {os.path.exists(local_model_path)}")
         
-        # Check if path conversion failed
-        if stage_A_repo is None:
-            print(f"[ERROR] Failed to find local model '{original_stage_A_repo}' in yue folder")
+        # Check if local model folder exists
+        if os.path.exists(local_model_path) and os.path.isdir(local_model_path):
+            stage_A_repo = local_model_path
+            print(f"[DEBUG] Using local model path: {stage_A_repo}")
+        else:
+            print(f"[ERROR] Local model folder '{local_model_path}' not found")
             print(f"[DEBUG] Available files in yue folder: {folder_paths.get_filename_list('yue')}")
             # Fallback to original value for Hugging Face download
             stage_A_repo = f"m-a-p/{original_stage_A_repo}"
             print(f"[DEBUG] Falling back to Hugging Face repo: {stage_A_repo}")
-        else:
-            print(f"[DEBUG] Using local model path: {stage_A_repo}")
         
         basic_model_config=os.path.join(current_node_path, "inference/xcodec_mini_infer/final_ckpt/config.yaml")
         model_config = OmegaConf.load(basic_model_config)
@@ -438,20 +440,22 @@ class YUE_Stage_B_Loader:
         
         # Convert stage_B_repo to full local path
         original_stage_B_repo = stage_B_repo
-        stage_B_repo = folder_paths.get_full_path("yue", stage_B_repo)
+        local_model_path = os.path.join(YUE_weigths_path, stage_B_repo)
         
-        # Debug: Print path conversion results
-        print(f"[DEBUG] folder_paths.get_full_path('yue', '{original_stage_B_repo}') returned: {stage_B_repo}")
+        # Debug: Print path construction
+        print(f"[DEBUG] Constructed local path: {local_model_path}")
+        print(f"[DEBUG] Local path exists: {os.path.exists(local_model_path)}")
         
-        # Check if path conversion failed
-        if stage_B_repo is None:
-            print(f"[ERROR] Failed to find local model '{original_stage_B_repo}' in yue folder")
+        # Check if local model folder exists
+        if os.path.exists(local_model_path) and os.path.isdir(local_model_path):
+            stage_B_repo = local_model_path
+            print(f"[DEBUG] Using local model path: {stage_B_repo}")
+        else:
+            print(f"[ERROR] Local model folder '{local_model_path}' not found")
             print(f"[DEBUG] Available files in yue folder: {folder_paths.get_filename_list('yue')}")
             # Fallback to original value for Hugging Face download
             stage_B_repo = f"m-a-p/{original_stage_B_repo}"
             print(f"[DEBUG] Falling back to Hugging Face repo: {stage_B_repo}")
-        else:
-            print(f"[DEBUG] Using local model path: {stage_B_repo}")
 
         quantization_model=info.get("quantization_model")
         mmgp_profile=info.get("mmgp_profile")
