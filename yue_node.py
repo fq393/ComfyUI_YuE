@@ -313,10 +313,6 @@ class YUE_Stage_A_Sampler:
             # with open(lyrics_txt_path) as f:
             #     lyrics_prompt = split_lyrics(f.read())
             
-            # Debug: Print original lyrics input
-            print(f"DEBUG: Original lyrics input length: {len(lyrics_prompt.strip())}")
-            print(f"DEBUG: Original lyrics preview: {lyrics_prompt.strip()[:200]}...")
-            
             lyrics=split_lyrics(lyrics_prompt.strip()) 
             
             # Check if lyrics is empty
