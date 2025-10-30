@@ -225,6 +225,9 @@ class YUE_Stage_A_Sampler:
             },
             "optional": {
                 "manual_segments": ("INT", {"default": 0, "min": 0, "max": 10, "step": 1, "display": "number", "tooltip": "限制使用的歌词段落数量，0表示使用所有歌词段落"}),
+                "custom_audio_prompt": ("AUDIO", {"tooltip": "自定义音频参考文件（可选），如果不提供则使用默认的pop.00001.mp3"}),
+                "custom_vocal_track": ("AUDIO", {"tooltip": "自定义人声轨道文件（可选），用于双轨模式，如果不提供则使用默认的pop.00001.Vocals.mp3"}),
+                "custom_instrumental_track": ("AUDIO", {"tooltip": "自定义伴奏轨道文件（可选），用于双轨模式，如果不提供则使用默认的pop.00001.Instrumental.mp3"}),
             }
         }
 
@@ -234,11 +237,24 @@ class YUE_Stage_A_Sampler:
     CATEGORY = "YUE"
 
     def sampler_main(self, model, genres_prompt, lyrics_prompt, seed, repetition_penalty, prompt_start_time, prompt_end_time, max_new_tokens,
-                     use_dual_tracks_prompt, use_audio_prompt, offload_model, stage1_no_guidance, manual_segments=0):
+                     use_dual_tracks_prompt, use_audio_prompt, offload_model, stage1_no_guidance, manual_segments=0, 
+                     custom_audio_prompt=None, custom_vocal_track=None, custom_instrumental_track=None):
         
-        instrumental_track_prompt_path=os.path.join(current_node_path, "prompt_egs/pop.00001.Instrumental.mp3")
-        vocal_track_prompt_path=os.path.join(current_node_path, "prompt_egs/pop.00001.Vocals.mp3")
-        audio_prompt_path=os.path.join(current_node_path, "prompt_egs/pop.00001.mp3")
+        # 使用自定义音频文件或默认文件
+        if custom_instrumental_track is not None:
+            instrumental_track_prompt_path = custom_instrumental_track
+        else:
+            instrumental_track_prompt_path = os.path.join(current_node_path, "prompt_egs/pop.00001.Instrumental.mp3")
+            
+        if custom_vocal_track is not None:
+            vocal_track_prompt_path = custom_vocal_track
+        else:
+            vocal_track_prompt_path = os.path.join(current_node_path, "prompt_egs/pop.00001.Vocals.mp3")
+            
+        if custom_audio_prompt is not None:
+            audio_prompt_path = custom_audio_prompt
+        else:
+            audio_prompt_path = os.path.join(current_node_path, "prompt_egs/pop.00001.mp3")
 
         stage1_output_dir=os.path.join(folder_paths.get_output_directory(), "stage1")
         os.makedirs(stage1_output_dir, exist_ok=True)
