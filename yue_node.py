@@ -205,23 +205,23 @@ class YUE_Stage_A_Sampler:
         return {
             "required": {
                 "model": ("MODEL_YUE_A",),
-                "genres_prompt": ("STRING", {"default": "inspiring female uplifting pop airy vocal electronic bright vocal vocal.", "multiline": False}),
+                "genres_prompt": ("STRING", {"default": "inspiring female uplifting pop airy vocal electronic bright vocal vocal.", "multiline": False, "tooltip": "音乐风格描述，支持乐器、流派、情绪、人声音色和性别等标签"}),
                 "lyrics_prompt": ("STRING", {"default":
                     "[verse]\nStaring at the sunset, colors paint the sky.\nThoughts of you keep swirling, can't deny.\nI know I let you down, I made mistakes.\nBut I'm here to mend the heart I didn't break.\n\n"
                     "[chorus]\nEvery road you take, I'll be one step behind.\nEvery dream you chase, I'm reaching for the light.\nYou can't fight this feeling now.\nI won't back down.\nYou know you can't deny it now.\n I won't back down \n\n"
                     "[verse]\nThey might say I'm foolish, chasing after you.\nBut they don't feel this love the way we do.\nMy heart beats only for you, can't you see?\nI won't let you slip away from me. \n\n"
                     "[chorus]\nEvery road you take, I'll be one step behind.\nEvery dream you chase, I'm reaching for the light.\nYou can't fight this feeling now.\nI won't back down.\nYou know you can't deny it now.\n I won't back down \n\n"
                     "[bridge]\nNo, I won't back down, won't turn around.\nUntil you're back where you belong.\nI'll cross the oceans wide, stand by your side.\nTogether we are strong. \n\n"
-                    "[outro]\nEvery road you take, I'll be one step behind.\nEvery dream you chase, love's the tie that binds.\nYou can't fight this feeling now.\nI won't back down.", "multiline": True}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": MAX_SEED}),
-                "repetition_penalty": ("FLOAT", {"default": 1.1, "min": 1.0, "max": 2.0, "step": 0.1}),
+                    "[outro]\nEvery road you take, I'll be one step behind.\nEvery dream you chase, love's the tie that binds.\nYou can't fight this feeling now.\nI won't back down.", "multiline": True, "tooltip": "歌词内容，使用[verse]、[chorus]、[bridge]等标签分段，音乐时长将根据歌词段落数量自动确定"}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": MAX_SEED, "tooltip": "随机种子，用于控制生成结果的随机性，相同种子产生相同结果"}),
+                "repetition_penalty": ("FLOAT", {"default": 1.1, "min": 1.0, "max": 2.0, "step": 0.1, "tooltip": "重复惩罚系数，值越大越能避免重复内容，建议范围1.0-1.5"}),
                 "prompt_start_time": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 300.0, "step": 0.5, "tooltip": "音频提示的开始时间（仅在使用音频提示时有效）"}),
                 "prompt_end_time": ("FLOAT", {"default": 6.0, "min": 1.0, "max": 300.0, "step": 0.5, "tooltip": "音频提示的结束时间（仅在使用音频提示时有效）"}),
-                "max_new_tokens": ("INT", {"default": 3000, "min": 2944, "max": 16384, "step": 1, "display": "number"}),
-                "use_dual_tracks_prompt":("BOOLEAN",{"default":True}),
-                "use_audio_prompt":("BOOLEAN",{"default":False}),
-                "offload_model":("BOOLEAN",{"default":True}),
-                "stage1_no_guidance":("BOOLEAN",{"default":True}),
+                "max_new_tokens": ("INT", {"default": 3000, "min": 2944, "max": 16384, "step": 1, "display": "number", "tooltip": "最大生成token数量，影响生成质量和速度，值越大质量越好但速度越慢"}),
+                "use_dual_tracks_prompt":("BOOLEAN",{"default":True, "tooltip": "是否使用双轨音频提示（人声+伴奏分离）"}),
+                "use_audio_prompt":("BOOLEAN",{"default":False, "tooltip": "是否使用单轨音频提示作为参考"}),
+                "offload_model":("BOOLEAN",{"default":True, "tooltip": "是否在生成完成后卸载模型以释放显存"}),
+                "stage1_no_guidance":("BOOLEAN",{"default":True, "tooltip": "是否禁用第一阶段的引导生成，禁用可能提高生成速度"}),
             },
             "optional": {
                 "manual_segments": ("INT", {"default": 0, "min": 0, "max": 10, "step": 1, "display": "number", "tooltip": "限制使用的歌词段落数量，0表示使用所有歌词段落"}),
