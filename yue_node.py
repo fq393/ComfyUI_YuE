@@ -275,6 +275,16 @@ class YUE_Stage_A_Sampler:
             #     lyrics = f.read().strip()    
             lyrics=lyrics_prompt.strip()   
             pipeline=model.get("stage_1_model")
+            
+            # Calculate run_n_segments based on manual_segments parameter
+            lyrics_segments = split_lyrics(lyrics_prompt.strip())
+            if manual_segments > 0:
+                run_n_segments = min(manual_segments, len(lyrics_segments))
+                print(f"Using manual segments limit: {run_n_segments} (max: {manual_segments}, available lyrics: {len(lyrics_segments)})")
+            else:
+                run_n_segments = len(lyrics_segments)
+                print(f"Using all lyrics segments: {run_n_segments}")
+            
             seed_everything(seed)
             raw_output = pipeline.generate(
                 use_dual_tracks_prompt=use_dual_tracks_prompt,
@@ -284,7 +294,7 @@ class YUE_Stage_A_Sampler:
                 audio_prompt_path=audio_prompt_path,
                 genres=genres_prompt.strip(),
                 lyrics=lyrics,
-                run_n_segments=run_n_segment,
+                run_n_segments=run_n_segments,
                 max_new_tokens=max_new_tokens,
                 prompt_start_time=prompt_start_time,
                 prompt_end_time=prompt_end_time,
